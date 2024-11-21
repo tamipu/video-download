@@ -1,20 +1,21 @@
-import os
+from flask import Flask, jsonify, request
 from pytube import YouTube
-from sys import argv
 
-output_path = "./../output videos"
-os.makedirs(output_path, exist_ok=True)
+app = Flask(__name__)
 
-try:
-    yt = YouTube(argv[1])
+@app.route('/download', methods=['POST'])
+def download_video():
+    url = request.json.get('url')
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
 
-    stream = yt.streams.get_highest_resolution()
+    try:
+        yt = YouTube(url)
+        stream = yt.streams.get_highest_resolution()
+        stream.download(output_path="./downloads")
+        return jsonify({"message": "Download started", "video_title": yt.title}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    stream.download(output_path)
-
-    print(f"Video downloaded successfully to {output_path}")
-
-except IndexError:
-    print("Please provide a YouTube video URL as an argument.")
-except Exception as e:
-    print(f"An error occurred: {e}")
+if __name__ == '__main__':
+    app.run(debug=True)
